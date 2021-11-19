@@ -1,2 +1,2 @@
-webcrawler:
+all:
 	cargo build --release
