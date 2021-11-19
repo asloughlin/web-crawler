@@ -10,6 +10,3 @@ select = "0.5.0"
 native-tls = "0.2.8"
 regex = "1.5.4"
 queues = "1.0.2"
-
-[build]
-target-dir = "."
