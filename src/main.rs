@@ -101,7 +101,7 @@ fn get_links_from_html(html: &str) -> HashSet<String> {
 
 fn get_secret_flag(html: &str) -> bool {
     for secret_flag in Document::from(html).find(Class("secret_flag")).filter_map(|n| Some(n.text())) {
-        let secret_flag_re = Regex::new(r"FLAG: (?P<flag>*{64})").unwrap();
+        let secret_flag_re = Regex::new(r"FLAG: (?P<flag>.{64})").unwrap();
         let caps = secret_flag_re.captures(&secret_flag).unwrap();
         println!("{}", &caps["flag"]);
         return true;
