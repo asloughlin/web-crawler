@@ -1,1 +1,1 @@
-./target/release/web_crawler
+./target/release/web_crawler "$@"
