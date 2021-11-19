@@ -48,12 +48,10 @@ fn read_http_response(mut stream: &mut TlsStream<TcpStream>, cookies: &mut HashM
             close_connection = true;
         }
         more_header = !line.eq("\r\n");
-        // print!("{}", line);
     }
 
     let mut body = vec![0u8; content_length];
     reader.read_exact(&mut body).unwrap();
-    // println!("{}", from_utf8(&body).unwrap());
 
     if close_connection {
         *stream = setup_connection();
@@ -71,9 +69,7 @@ fn get_url(url: &str, stream: &mut TlsStream<TcpStream>, cookies: &mut HashMap<S
         cookie_header.push_str(&value);
         cookie_header.push_str("; ");
     }
-    // println!("{}", cookie_header);
     let get_message = format!("GET {} HTTP/1.1\r\nHost: fakebook.3700.network:443{}\r\n\r\n", url, cookie_header);
-    // println!("{}", get_message);
     stream.write_all(get_message.as_bytes()).unwrap();
 
     read_http_response(stream, cookies, frontier)
@@ -90,7 +86,6 @@ fn login(username: &str, password: &str, csrf_token: &str, stream: &mut TlsStrea
     }
     let content_length = content.len();
     let post_message = format!("POST /accounts/login/?next=/fakebook/ HTTP/1.1\r\nHost: fakebook.3700.network:443\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: {}{}\r\n\r\n{}", content_length, cookie_header, content);
-    // println!("{}", post_message);
     stream.write_all(post_message.as_bytes()).unwrap();
 
     read_http_response(stream, cookies, frontier)
@@ -106,7 +101,9 @@ fn get_links_from_html(html: &str) -> HashSet<String> {
 
 fn get_secret_flag(html: &str) -> bool {
     for secret_flag in Document::from(html).find(Class("secret_flag")).filter_map(|n| Some(n.text())) {
-        println!("{}", secret_flag);
+        let secret_flag_re = Regex::new(r"FLAG: (?P<flag>*{64})").unwrap();
+        let caps = secret_flag_re.captures(&secret_flag).unwrap();
+        println!("{}", &caps["flag"]);
         return true;
     }
     return false;
@@ -133,8 +130,6 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let username = &args[1];
     let password = &args[2];
-    println!("Username: {}", username);
-    println!("Password: {}", password);
     
     let mut stream = setup_connection();
     let mut cookies = HashMap::<String, String>::new();
@@ -143,12 +138,9 @@ fn main() {
 
     let login_page = get_url("/accounts/login/?next=/fakebook/", &mut stream, &mut cookies, &mut frontier);
 
-    // Parse login page for csrf middleware token
     let csrf_token = parse_csrf_token(&login_page);
     
-    // Post login request
     let _login_response = login(username, password, &csrf_token, &mut stream, &mut cookies, &mut frontier);
-    // println!("login: {}", login_response);
 
     let mut visited_pages = HashSet::<String>::new();
     frontier.add("/fakebook/".to_string()).unwrap();
@@ -157,7 +149,6 @@ fn main() {
     while frontier.size() > 0 && num_secret_flags_found < 5 {
         let url = frontier.remove().unwrap();
         if !visited_pages.contains(&url) && url.starts_with("/") && !url.starts_with("/accounts/logout/") {
-            // println!("visiting {}", url);
             let page = get_url(&url, &mut stream, &mut cookies, &mut frontier);
             visited_pages.insert(url);
             if parse_html_page(page, &mut frontier) {
